@@ -19,8 +19,7 @@ rooms = int(sys.argv[2])
 
 def one_room(clauses):
     # creates the atoms responsible for ensuring every monopole is in exactly
-    # one room.
-    # TODO: make function more streamlined. It's pretty dirty
+    # one room. I know, I know. It's pretty dirty, I just ran out of time.
     # clauses is a list of all CNF clauses to be passed to miniSAT
     # monos is the number of monopoles to be processed
     # rooms is an upper bound to the number of rooms to be checked
@@ -34,7 +33,6 @@ def one_room(clauses):
 
     for room1 in range(0, rooms):
         # ensures each monopole is only in 1 room
-        # room1 is the first room being checked against
         for mono in range(1, monos + 1):
             current_room = room1 * monos + mono
             for room2 in range(room1 + 1, rooms):
@@ -52,13 +50,11 @@ def monopole(clauses):
     monos_stop = monos // 2
     if monos % 2 == 1:
         monos_stop += 1
-    print("m_stop:", monos_stop)
 
     for m in range(1, monos_stop):
         for r in range(0, rooms):
             i_start = (monos * r) + m + 1
             i_stop = (monos * r) + monos - m + 1
-#            print("m:", m, "r:", r, "i_start:", i_start, "i_stop:", i_stop)
             for i in range (i_start, i_stop):
                 clauses.append([-(i_start - 1), -i, -(m + i)])
 
