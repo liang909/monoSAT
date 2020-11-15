@@ -6,38 +6,40 @@
 #          monopole in the same room. i.e. 1 and 2 can be in
 #          the same room but not with 3 because 1 + 2 = 3 (in
 #          case you didn't know)
-# This program converts the monopole constraints to DIMACS format
-# by minisat.
+# This program converts the monopole constraints to DIMACS CNF format
+# to be used by minisat.
 
 import sys
-import math
 
 # monos = number of monopoles, first arg passed by user
-# rooms = number of rooms, second arg passed by user
 monos = int(sys.argv[1])
+# rooms = number of rooms, second arg passed by user
 rooms = int(sys.argv[2])
 
 
 def one_room(clauses):
-    # creates the atoms responsible for ensuring no monopole can be
-    # rooms at once.
-    # clauses is a list of all clauses to be passed to miniSAT
+    # creates the atoms responsible for ensuring every monopole is in exactly
+    # one room.
+    # TODO: make function more streamlined. It's pretty dirty
+    # clauses is a list of all CNF clauses to be passed to miniSAT
     # monos is the number of monopoles to be processed
     # rooms is an upper bound to the number of rooms to be checked
 
-    not_clauses = []
-
-    for m in range(1, monos + 1):
+    for mono in range(1, monos + 1):
+        # ensures each monopole is in a room.
         clause = []
-        not_clause = []
-        for r in range(0, rooms):
-            clause.append((monos * r) + m)
-            not_clause.append(-((monos * r) + m))
+        for room in range(0, rooms):
+            clause.append((room * monos) + mono)
         clauses.append(clause)
-        not_clauses.append(not_clause)
 
-    for c in not_clauses:
-        clauses.append(c)
+    for room1 in range(0, rooms):
+        # ensures each monopole is only in 1 room
+        # room1 is the first room being checked against
+        for mono in range(1, monos + 1):
+            current_room = room1 * monos + mono
+            for room2 in range(room1 + 1, rooms):
+                other_room = (room2 * monos + current_room)
+                clauses.append([-current_room, -other_room])
 
 
 def monopole(clauses):
@@ -47,25 +49,20 @@ def monopole(clauses):
     # monos is the number of monopoles to be processed
     # rooms is an upper bound to the number of rooms to be checked
 
-    if monos % 2 == 0:
-        mono_stop = monos//2
-    else:
-        mono_stop = math.ceil(monos/2)
+    monos_stop = monos // 2
+    if monos % 2 == 1:
+        monos_stop += 1
+    print("m_stop:", monos_stop)
 
-    print(mono_stop)
-    for m in range(1, mono_stop):
+    for m in range(1, monos_stop):
         for r in range(0, rooms):
-            new_room_start = (monos * r) + m
-            new_room_stop = monos * r + monos - m + 1
+            i_start = (monos * r) + m + 1
+            i_stop = (monos * r) + monos - m + 1
+#            print("m:", m, "r:", r, "i_start:", i_start, "i_stop:", i_stop)
+            for i in range (i_start, i_stop):
+                clauses.append([-(i_start - 1), -i, -(m + i)])
 
-            print(m, "start=", new_room_start, "stop=", new_room_stop)
-            for i in range(new_room_start + 1, new_room_stop):
-                clauses.append([-new_room_start, -i, -(m+i)])
 
-
-def p_a(clauses):
-    for c in clauses:
-        print(*c, '0')
 
 
 def main():
@@ -79,10 +76,9 @@ def main():
     one_room(clauses)
     monopole(clauses)
 
-    print(*atoms)
     print("p cnf", num_atoms, len(clauses))
-    #   p_a(clauses)
-    print("p cnf", num_atoms, len(clauses))
+    for c in clauses:
+        print(*c, '0')
 
 
 if __name__ == '__main__':
